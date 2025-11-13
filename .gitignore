@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 data/cleaned/*.csv
+data/raw/*.csv
+
