@@ -1,52 +1,91 @@
-# Purpose: Analyze tha cleaned Cyclistic 2024 CSV dataset
+# ============================================================
+# PURPOSE: Perform exploratory and statistical analysis on the
+#          cleaned Cyclistic 2024 dataset
+# AUTHOR:  Onyedikachi Ikuru
+# DATE:    11/14/2025
+# ============================================================
+
 
 # Load libraries
-library(vroom)       # Fast CSV reading
-library(dplyr)       # Data manipulation
-library(ggplot2)     # Visualization
-library(lubridate)   # Date/time handling
-library(forcats)     # Factor manipulation
+library(vroom) # Fast CSV reading
+library(dplyr) # Data manipulation
+library(ggplot2) # Visualization
+library(lubridate) # Date/time handling
+library(forcats) # Factor manipulation
+library(here) # Paths relative to project root
+library(tidyr) # Pivoting and reshaping
 
 # Load dataset CSV
-cyclistic_data <- vroom("data/cleaned/cyclistic_2024_cleaned.csv")
+cyclistic_data <- vroom(here("data", "cleaned", "cyclistic_2024_cleaned.csv"))
+
+# Convert key categorical columns to factors with proper order
+weekday_levels <- c(
+  "Monday", "Tuesday", "Wednesday", "Thursday",
+  "Friday", "Saturday", "Sunday"
+)
+
+month_levels <- c(
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+)
+
+member_levels <- c("member", "casual")
+
+duration_levels <- c(
+  "<5 min", "5–10 min", "10–15 min", "15–30 min",
+  "30–60 min", "1–2 hrs", ">2 hrs"
+)
+
+# Apply factor conversion
+cyclistic <- cyclistic_data %>%
+  mutate(
+    # Duration buckets
+    duration_bucket = cut(
+      ride_duration,
+      breaks = c(-Inf, 5, 10, 15, 30, 60, 120, Inf),
+      labels = duration_levels,
+      right = FALSE
+    ),
+
+    # Day of week
+    start_day_of_week = factor(start_day_of_week, levels = weekday_levels),
+    end_day_of_week = factor(end_day_of_week, levels = weekday_levels),
+
+    # Month
+    start_month = factor(start_month, levels = month_levels),
+    end_month = factor(end_month, levels = month_levels),
+
+    # Member type
+    member_casual = factor(member_casual, levels = member_levels)
+  )
 
 glimpse(cyclistic_data)
 
-# split the data into buckets of day, start_hour, duration
-cyclistic_time_buckets <- cyclistic_data %>%
-  mutate(
-    duration_bucket = case_when(
-      ride_duration < 10 ~ "<10 min",
-      ride_duration < 20 ~ "10-20 min",
-      ride_duration < 30 ~ "20-30 min",
-      ride_duration < 60 ~ "30-60 min",
-      TRUE ~ ">60 min"
-    )
-  ) %>%
-  group_by(start_day_of_week, start_hour, duration_bucket) %>%
-  summarise(rides_count = n(), .groups = "drop")
+# At this point cyclistic dataset contains:
+# rideable_type, started_at, ended_at, start_station_name,
+# end_station_name,member_casual, ride_duration, start_day_of_week,
+# start_month, start_hour, end_day_of_week, end_month, end_hour, duration_bucket
 
-# split the data into buckets of start locations ranked by location with most rides starting there
-cyclistic_locations <- cyclistic_data %>%
-  group_by(start_station_name) %>%
-  summarise(total_rides = n(), avg_duration = mean(ride_duration, na.rm = TRUE)) %>%
-  arrange(desc(total_rides))
+# Count rides by bucket and type
+duration_summary <- cyclistic %>%
+  count(duration_bucket, member_casual) %>%
+  ungroup() %>%
+  arrange(duration_bucket)
 
-# split data according to average ride duration by hour, day, month, sort by count
-avg_duration_summary <- cyclistic_data %>%
-  group_by(start_day_of_week, start_hour, start_month) %>%
-  summarise(
-    rides_count = n(),
-    avg_duration = mean(ride_duration, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  arrange(desc(rides_count))
+# Pivot to wide format
+duration_summary_wide <- duration_summary %>%
+  pivot_wider(
+    names_from = member_casual,
+    values_from = n,
+    values_fill = 0
+  )
 
-# Find top twenty locations (classify locations based on [residential, commercial/office, mixed]) for starting rides
-# identify top twenty locations (classify locations based on [residential, commercial/office, mixed]) for starting rides for different member types
-# split above relationships based on member type, rideable type
-# categories rides based on duration and member type and hour/day/month
+glimpse(duration_summary)
+glimpse(duration_summary_wide)
 
+# Rides by hour × weekday (heatmap-ready)
+rides_heatmap <- cyclistic %>%
+  count(start_day_of_week, start_hour) %>%
+  arrange(start_day_of_week, start_hour)
 
-
-
+glimpse(rides_heatmap)
