@@ -31,6 +31,7 @@ To generate it locally:
 2. Open the `data_cyclistic.R` script.
 3. Run the script in R.
    - The cleaned dataset will be saved to `data/cleaned/cyclistic_2024_cleaned.csv`.
-4. To get the up to date classification of the top 20 locations, run the address_classifiction.py script, with a valid gemini pro api key specified in your .env ``` file pip install python-dotenv requests ```
+4. To get the up to date classification of the top 20 locations, run the address_classifiction.py script, with a valid gemini pro api key specified in your .env file. make sure to run this command to get the required python dependencies ``` pip install python-dotenv requests ```
+
 ---
 *Google Data Analytics Capstone Project*
