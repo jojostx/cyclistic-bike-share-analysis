@@ -1,0 +1,15 @@
+"member_casual","duration_bucket","total_rides"
+"member","<5 min",798239
+"member","5–10 min",1081355
+"member","10–15 min",613932
+"member","15–30 min",621184
+"member","30–60 min",170195
+"member","1–2 hrs",16066
+"member",">2 hrs",6271
+"casual","<5 min",305685
+"casual","5–10 min",492549
+"casual","10–15 min",344858
+"casual","15–30 min",454765
+"casual","30–60 min",221034
+"casual","1–2 hrs",84884
+"casual",">2 hrs",25530
