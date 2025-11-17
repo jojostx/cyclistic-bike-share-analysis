@@ -75,15 +75,17 @@ Cyclistic-Analysis/
 - Certain top stations are in **residential areas**, indicating commuting vs recreational patterns  
 
 ## Deliverables
-- [Cleaned Dataset](data/cleaned/cyclistic_2024_cleaned.csv)  
+- [Cleaned Data (Drive Link)](https://bit.ly/cyclistic_cleaned_2024) 
+- [Dashboard (Tableau)](https://public.tableau.com/app/profile/onyedikachi.ikuru)
+- [Cleaned Dataset](data/cleaned/cyclistic_2024_cleaned.csv) 
 - [Analysis Scripts](scripts/analysis.R)  
 - [Visualization Scripts](scripts/visualization.R)  
-- [Station Classification Python Script](scripts/python/address_classification.py)  
-- Plots in `plots/` folder:
+- [Station Classification Python Script](scripts/address_classification.py)  
+- Plots in [plots](plots/) folder:
 
-Example plots:  
-![Top Start Stations](plots/top_start_stations_by_member_category_simple.png)  
-![Monthly Trends](plots/monthly_rides_by_member.png)  
+   Example plots:  
+   ![Top Start Stations](plots/top_start_stations_by_member_category_simple.png)  
+   ![Monthly Trends](plots/monthly_rides_by_member.png)  
 
 ## Generating the Cleaned Dataset
 The cleaned dataset is too large to include in the repo. To generate it locally:
