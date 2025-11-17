@@ -1,7 +1,7 @@
 # ============================================================
 # PURPOSE: Perform exploratory and statistical analysis on the
 #          cleaned Cyclistic 2024 dataset, scoped by member type
-#          Includes scaffolding for station classification workflow
+#          Includes station classification scaffolding + extra metrics
 # AUTHOR:  Onyedikachi Ikuru
 # DATE:    11-14-2025
 # ============================================================
@@ -70,7 +70,6 @@ write.csv(duration_summary,
 # 2. Top 20 Start & End Locations by Member Type
 # =============================================================
 top_start_file <- here("data", "output", "top20_start_stations_by_member.csv")
-
 classified_start_file <- here(
   "data",
   "output",
@@ -91,8 +90,11 @@ top_start_location_by_member <- cyclistic %>%
 
 write.csv(top_start_location_by_member, top_start_file, row.names = FALSE)
 
-top_end_file <- here("data", "output", "top20_end_stations_by_member.csv")
-
+top_end_file <- here(
+  "data",
+  "output",
+  "top20_end_stations_by_member.csv"
+)
 classified_end_file <- here(
   "data",
   "output",
@@ -100,12 +102,7 @@ classified_end_file <- here(
 )
 
 top_end_location_by_member <- cyclistic %>%
-  count(
-    member_casual,
-    end_station_name,
-    name = "total_rides",
-    sort = TRUE
-  ) %>%
+  count(member_casual, end_station_name, name = "total_rides", sort = TRUE) %>%
   group_by(member_casual) %>%
   slice_max(total_rides, n = 20, with_ties = FALSE) %>%
   ungroup() %>%
@@ -123,7 +120,6 @@ run_python_classification <- function(input_csv) {
       "Classification file missing. Running Python script for: ",
       input_csv
     )
-    # Quote the input path
     status <- system2(
       "python",
       args = c(
@@ -131,7 +127,6 @@ run_python_classification <- function(input_csv) {
         shQuote(input_csv)
       )
     )
-
     if (!identical(status, 0L)) {
       stop("Python classification failed for: ", input_csv)
     }
@@ -144,10 +139,10 @@ run_python_classification(top_start_file)
 run_python_classification(top_end_file)
 
 # ---------------------------
-# Load classified CSVs
+# Load classified CSVs and join
 # ---------------------------
-classified_start <- read_csv(classified_start_file)
-classified_end <- read_csv(classified_end_file)
+classified_start <- read_csv(classified_start_file, show_col_types = FALSE)
+classified_end <- read_csv(classified_end_file, show_col_types = FALSE)
 
 top_start_with_category <- top_start_location_by_member %>%
   left_join(
@@ -156,12 +151,10 @@ top_start_with_category <- top_start_location_by_member %>%
     relationship = "many-to-many"
   )
 
-write.csv(
-  top_start_with_category,
+write.csv(top_start_with_category,
   here("data", "output", "top_start_with_category.csv"),
   row.names = FALSE
 )
-
 
 top_end_with_category <- top_end_location_by_member %>%
   left_join(
@@ -170,13 +163,13 @@ top_end_with_category <- top_end_location_by_member %>%
     relationship = "many-to-many"
   )
 
-write.csv(
-  top_end_with_category,
+write.csv(top_end_with_category,
   here("data", "output", "top_end_with_category.csv"),
   row.names = FALSE
 )
+
 # =============================================================
-# 3. Ride Duration Stats by Member Type
+# 3. Ride Duration Stats by Member Type (now with 95% CI)
 # =============================================================
 member_stats <- cyclistic %>%
   group_by(member_casual) %>%
@@ -185,7 +178,11 @@ member_stats <- cyclistic %>%
     median_duration = median(ride_duration, na.rm = TRUE),
     min_duration = min(ride_duration, na.rm = TRUE),
     max_duration = max(ride_duration, na.rm = TRUE),
+    sd_duration = sd(ride_duration, na.rm = TRUE),
     total_rides = n(),
+    se = sd_duration / sqrt(total_rides),
+    ci_low = avg_duration - 1.96 * se,
+    ci_high = avg_duration + 1.96 * se,
     .groups = "drop"
   )
 
@@ -201,7 +198,7 @@ write.csv(
 bike_behavior <- cyclistic %>%
   group_by(member_casual, rideable_type) %>%
   summarise(
-    avg_duration = mean(ride_duration),
+    avg_duration = mean(ride_duration, na.rm = TRUE),
     total_rides = n(),
     .groups = "drop"
   )
@@ -222,7 +219,11 @@ hourly_by_member <- cyclistic %>%
     avg_duration = mean(ride_duration, na.rm = TRUE),
     .groups = "drop"
   ) %>%
-  complete(member_casual, start_hour = 0:23, fill = list(total_rides = 0))
+  complete(
+    member_casual,
+    start_hour = 0:23,
+    fill = list(total_rides = 0)
+  )
 
 write.csv(
   hourly_by_member,
@@ -234,7 +235,7 @@ daily_by_member <- cyclistic %>%
   group_by(member_casual, start_day_of_week) %>%
   summarise(
     total_rides = n(),
-    avg_duration = mean(ride_duration),
+    avg_duration = mean(ride_duration, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -248,7 +249,7 @@ monthly_by_member <- cyclistic %>%
   group_by(member_casual, start_month) %>%
   summarise(
     total_rides = n(),
-    avg_duration = mean(ride_duration),
+    avg_duration = mean(ride_duration, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -262,15 +263,65 @@ write.csv(
 # 6. Ride Duration × Time × Member Type
 # =============================================================
 duration_time_member <- cyclistic %>%
-  group_by(member_casual, duration_bucket, start_day_of_week, start_hour) %>%
+  group_by(
+    member_casual,
+    duration_bucket,
+    start_day_of_week,
+    start_hour
+  ) %>%
   summarise(
     total_rides = n(),
-    avg_duration = mean(ride_duration),
+    avg_duration = mean(ride_duration, na.rm = TRUE),
     .groups = "drop"
   )
 
 write.csv(
   duration_time_member,
   here("data", "output", "duration_time_by_member.csv"),
+  row.names = FALSE
+)
+
+# =============================================================
+# 7. 🔎 Nice-to-haves — Analysis-side metrics
+#    A) Peak / Off-peak buckets aggregated
+# =============================================================
+period_by_member <- cyclistic %>%
+  mutate(
+    period = case_when(
+      start_hour %in% 7:9 ~ "AM peak",
+      start_hour %in% 16:18 ~ "PM peak",
+      TRUE ~ "Off-peak"
+    ),
+    period = factor(period, levels = c("AM peak", "PM peak", "Off-peak"))
+  ) %>%
+  group_by(member_casual, period) %>%
+  summarise(
+    total_rides = n(),
+    avg_duration = mean(ride_duration, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  group_by(member_casual) %>%
+  mutate(share = total_rides / sum(total_rides)) %>%
+  ungroup()
+
+write.csv(
+  period_by_member,
+  here("data", "output", "period_by_member.csv"),
+  row.names = FALSE
+)
+
+# =============================================================
+#    B) Weekday × Month seasonality index (shares within month)
+# =============================================================
+weekday_month_index <- cyclistic %>%
+  group_by(member_casual, start_month, start_day_of_week) %>%
+  summarise(total_rides = n(), .groups = "drop") %>%
+  group_by(member_casual, start_month) %>%
+  mutate(share = total_rides / sum(total_rides)) %>%
+  ungroup()
+
+write.csv(
+  weekday_month_index,
+  here("data", "output", "weekday_month_index.csv"),
   row.names = FALSE
 )
