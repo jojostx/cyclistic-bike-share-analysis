@@ -77,7 +77,7 @@ Cyclistic-Analysis/
 ## Deliverables
 - [Cleaned Data (Drive Link)](https://bit.ly/cyclistic_cleaned_2024) 
 - [Dashboard (Tableau)](https://public.tableau.com/app/profile/onyedikachi.ikuru)
-- [Cleaned Dataset](data/cleaned/cyclistic_2024_cleaned.csv) 
+- [Output Datasets](data/output/) 
 - [Analysis Scripts](scripts/analysis.R)  
 - [Visualization Scripts](scripts/visualization.R)  
 - [Station Classification Python Script](scripts/address_classification.py)  
