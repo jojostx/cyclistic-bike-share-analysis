@@ -17,7 +17,9 @@ cyclistic <- vroom(files) %>%
   clean_names()
 
 # Inspect structure
-glimpse(cyclistic)
+if (interactive()) {
+  glimpse(cyclistic)
+}
 
 # Select relevant columns (remove IDs and coordinates)
 cyclistic_data <- cyclistic %>%
@@ -94,7 +96,9 @@ cat("Unique ride types:\n")
 print(unique(cyclistic_data$rideable_type))
 
 # Preview cleaned data
-glimpse(cyclistic_data)
+if (interactive()) {
+  glimpse(cyclistic_data)
+}
 
 # Save cleaned dataset using project-relative path
 dir.create(here("data", "cleaned"), recursive = TRUE, showWarnings = FALSE)

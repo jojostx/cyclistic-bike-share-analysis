@@ -3,7 +3,7 @@
 #          cleaned Cyclistic 2024 dataset, scoped by member type
 #          Includes scaffolding for station classification workflow
 # AUTHOR:  Onyedikachi Ikuru
-# DATE:    11/14/2025
+# DATE:    11-14-2025
 # ============================================================
 
 # Load libraries
@@ -18,6 +18,7 @@ library(readr)
 
 # Load dataset CSV
 cyclistic_data <- vroom(here("data", "cleaned", "cyclistic_2024_cleaned.csv"))
+dir.create(here("data", "output"), recursive = TRUE, showWarnings = FALSE)
 
 # Factor levels
 weekday_levels <- c(
@@ -55,7 +56,10 @@ cyclistic <- cyclistic_data %>%
 # =============================================================
 duration_summary <- cyclistic %>%
   group_by(member_casual, duration_bucket) %>%
-  summarise(total_rides = n(), .groups = "drop")
+  summarise(total_rides = n(), .groups = "drop") %>%
+  group_by(member_casual) %>%
+  mutate(share = total_rides / sum(total_rides)) %>%
+  ungroup()
 
 write.csv(duration_summary,
   here("data", "output", "duration_summary_by_member.csv"),
@@ -66,6 +70,7 @@ write.csv(duration_summary,
 # 2. Top 20 Start & End Locations by Member Type
 # =============================================================
 top_start_file <- here("data", "output", "top20_start_stations_by_member.csv")
+
 classified_start_file <- here(
   "data",
   "output",
@@ -73,15 +78,21 @@ classified_start_file <- here(
 )
 
 top_start_location_by_member <- cyclistic %>%
-  count(member_casual, start_station_name, sort = TRUE) %>%
+  count(
+    member_casual,
+    start_station_name,
+    name = "total_rides",
+    sort = TRUE
+  ) %>%
   group_by(member_casual) %>%
-  slice_max(n, n = 20) %>%
+  slice_max(total_rides, n = 20, with_ties = FALSE) %>%
   ungroup() %>%
   rename(station_name = start_station_name)
 
 write.csv(top_start_location_by_member, top_start_file, row.names = FALSE)
 
 top_end_file <- here("data", "output", "top20_end_stations_by_member.csv")
+
 classified_end_file <- here(
   "data",
   "output",
@@ -89,9 +100,14 @@ classified_end_file <- here(
 )
 
 top_end_location_by_member <- cyclistic %>%
-  count(member_casual, end_station_name, sort = TRUE) %>%
+  count(
+    member_casual,
+    end_station_name,
+    name = "total_rides",
+    sort = TRUE
+  ) %>%
   group_by(member_casual) %>%
-  slice_max(n, n = 20) %>%
+  slice_max(total_rides, n = 20, with_ties = FALSE) %>%
   ungroup() %>%
   rename(station_name = end_station_name)
 
@@ -108,10 +124,17 @@ run_python_classification <- function(input_csv) {
       input_csv
     )
     # Quote the input path
-    system2(
+    status <- system2(
       "python",
-      args = c("scripts/address_classification.py", shQuote(input_csv))
+      args = c(
+        "scripts/address_classification.py",
+        shQuote(input_csv)
+      )
     )
+
+    if (!identical(status, 0L)) {
+      stop("Python classification failed for: ", input_csv)
+    }
   } else {
     message("Classification file already exists: ", output_csv)
   }
@@ -133,6 +156,13 @@ top_start_with_category <- top_start_location_by_member %>%
     relationship = "many-to-many"
   )
 
+write.csv(
+  top_start_with_category,
+  here("data", "output", "top_start_with_category.csv"),
+  row.names = FALSE
+)
+
+
 top_end_with_category <- top_end_location_by_member %>%
   left_join(
     classified_end,
@@ -140,21 +170,27 @@ top_end_with_category <- top_end_location_by_member %>%
     relationship = "many-to-many"
   )
 
+write.csv(
+  top_end_with_category,
+  here("data", "output", "top_end_with_category.csv"),
+  row.names = FALSE
+)
 # =============================================================
 # 3. Ride Duration Stats by Member Type
 # =============================================================
 member_stats <- cyclistic %>%
   group_by(member_casual) %>%
   summarise(
-    avg_duration = mean(ride_duration),
-    median_duration = median(ride_duration),
-    min_duration = min(ride_duration),
-    max_duration = max(ride_duration),
+    avg_duration = mean(ride_duration, na.rm = TRUE),
+    median_duration = median(ride_duration, na.rm = TRUE),
+    min_duration = min(ride_duration, na.rm = TRUE),
+    max_duration = max(ride_duration, na.rm = TRUE),
     total_rides = n(),
     .groups = "drop"
   )
 
-write.csv(member_stats,
+write.csv(
+  member_stats,
   here("data", "output", "member_stats.csv"),
   row.names = FALSE
 )
@@ -170,7 +206,8 @@ bike_behavior <- cyclistic %>%
     .groups = "drop"
   )
 
-write.csv(bike_behavior,
+write.csv(
+  bike_behavior,
   here("data", "output", "bike_behavior_by_member.csv"),
   row.names = FALSE
 )
@@ -182,11 +219,13 @@ hourly_by_member <- cyclistic %>%
   group_by(member_casual, start_hour) %>%
   summarise(
     total_rides = n(),
-    avg_duration = mean(ride_duration),
+    avg_duration = mean(ride_duration, na.rm = TRUE),
     .groups = "drop"
-  )
+  ) %>%
+  complete(member_casual, start_hour = 0:23, fill = list(total_rides = 0))
 
-write.csv(hourly_by_member,
+write.csv(
+  hourly_by_member,
   here("data", "output", "hourly_by_member.csv"),
   row.names = FALSE
 )
@@ -199,7 +238,8 @@ daily_by_member <- cyclistic %>%
     .groups = "drop"
   )
 
-write.csv(daily_by_member,
+write.csv(
+  daily_by_member,
   here("data", "output", "daily_by_member.csv"),
   row.names = FALSE
 )
@@ -212,7 +252,8 @@ monthly_by_member <- cyclistic %>%
     .groups = "drop"
   )
 
-write.csv(monthly_by_member,
+write.csv(
+  monthly_by_member,
   here("data", "output", "monthly_by_member.csv"),
   row.names = FALSE
 )
@@ -228,30 +269,8 @@ duration_time_member <- cyclistic %>%
     .groups = "drop"
   )
 
-write.csv(duration_time_member,
+write.csv(
+  duration_time_member,
   here("data", "output", "duration_time_by_member.csv"),
   row.names = FALSE
-)
-
-# =============================================================
-# 7. Heatmap: Rides by Hour & Weekday (Faceted by Member Type)
-# =============================================================
-dir.create(here("plots"), showWarnings = FALSE)
-
-p_heatmap <- ggplot(
-  cyclistic,
-  aes(x = start_hour, y = start_day_of_week, fill = after_stat(count))
-) +
-  geom_bin2d(binwidth = c(1, 1)) +
-  facet_wrap(~member_casual) +
-  scale_fill_gradient(low = "lightblue", high = "darkblue") +
-  labs(
-    title = "Cyclistic: Rides by Hour & Weekday (Faceted by Member Type)",
-    x = "Hour", y = "Day of Week", fill = "Ride Count"
-  ) +
-  theme_minimal()
-
-ggsave(here("plots/rides_heatmap_by_member.png"),
-  p_heatmap,
-  width = 10, height = 6
 )

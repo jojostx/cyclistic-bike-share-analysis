@@ -4,7 +4,7 @@
 Analyze 2024 bike-share data to understand how annual members and casual riders use Cyclistic differently.
 
 ## Tools
-R, tidyverse, lubridate, ggplot2, Tableau Public
+R, tidyverse, lubridate, ggplot2, ggridges, vroom, Tableau Public
 
 ## Process
 - Combined 12 months of trip data
