@@ -36,15 +36,26 @@ cyclistic_data <- cyclistic_data %>%
     ~ trimws(gsub("[\r\n]", "", .))
   ))
 
-# Convert date/time columns to datetime objects
+parse_datetime_safe <- function(x) {
+  parse_date_time(
+    x,
+    orders = c(
+      "Ymd HMS", "Ymd HM", "Ymd",
+      "Y-m-d H:M:S", "Y-m-d H:M",
+      "Y/m/d H:M:S", "Y/m/d H:M",
+      "m/d/Y H:M:S", "m/d/Y H:M",
+      "m-d-Y H:M:S", "m-d-Y H:M"
+    ),
+    tz = "UTC",
+    quiet = TRUE
+  )
+}
+
 cyclistic_data <- cyclistic_data %>%
   mutate(
-    started_at = ymd_hms(started_at, quiet = TRUE),
-    ended_at   = ymd_hms(ended_at, quiet = TRUE)
-  )
-
-# Remove rows with invalid or missing dates
-cyclistic_data <- cyclistic_data %>%
+    started_at = parse_datetime_safe(started_at),
+    ended_at   = parse_datetime_safe(ended_at)
+  ) %>%
   filter(!is.na(started_at), !is.na(ended_at))
 
 # Add ride duration (minutes)
@@ -94,6 +105,9 @@ cat("Unique member types:\n")
 print(unique(cyclistic_data$member_casual))
 cat("Unique ride types:\n")
 print(unique(cyclistic_data$rideable_type))
+cat("Unique months:\n")
+print(unique(cyclistic_data$end_month))
+
 
 # Preview cleaned data
 if (interactive()) {

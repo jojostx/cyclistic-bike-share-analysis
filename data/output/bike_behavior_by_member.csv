@@ -1,7 +1,7 @@
 "member_casual","rideable_type","avg_duration","total_rides"
-"member","classic_bike",13.4450114684158,1576789
-"member","electric_bike",11.2803174164391,1671331
+"member","classic_bike",13.3603915468843,1759183
+"member","electric_bike",11.2333691588887,1888697
 "member","electric_scooter",8.23967635031543,59122
-"casual","classic_bike",29.0841133479007,871152
-"casual","electric_bike",14.674248885435,972938
+"casual","classic_bike",28.9132744126525,968777
+"casual","electric_bike",14.5372336141556,1091250
 "casual","electric_scooter",11.9376512468459,85215
