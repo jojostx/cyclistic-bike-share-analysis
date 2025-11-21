@@ -76,7 +76,7 @@ Cyclistic-Analysis/
 
 ## Deliverables
 - [Cleaned Data (Drive Link)](https://bit.ly/cyclistic_cleaned_2024) 
-- [Dashboard (Tableau)](https://public.tableau.com/app/profile/onyedikachi.ikuru/viz/CyclisticBikeSharingViz_17637099897730/StartStationInsights))
+- [Dashboard (Tableau)](https://public.tableau.com/app/profile/onyedikachi.ikuru/viz/CyclisticBikeSharingViz_17637099897730/StartStationInsights)
 - [Output Datasets](data/output/) 
 - [Analysis Scripts](scripts/analysis.R)  
 - [Visualization Scripts](scripts/visualization.R)  
